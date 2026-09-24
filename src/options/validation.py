@@ -36,3 +36,15 @@ def delta_hedge(o: OptionSpec, steps=63, paths=2000, seed=7):
         payoff=max(s-o.strike,0) if o.option_type=="call" else max(o.strike-s,0)
         errors.append(portfolio-payoff)
     return np.asarray(errors)
+
+
+def variance_reduction_comparison(o: OptionSpec, paths=(2000,10000,50000), seed=42):
+    """Compare plain Monte Carlo and antithetic sampling at matched path counts."""
+    rows=[]
+    for n in paths:
+        plain=monte_carlo(o,int(n),seed=seed,antithetic=False)
+        anti=monte_carlo(o,int(n),seed=seed,antithetic=True)
+        rows.append({"paths":int(n),"plain_price":plain["price"],"plain_stderr":plain["stderr"],
+                     "antithetic_price":anti["price"],"antithetic_stderr":anti["stderr"],
+                     "stderr_reduction_pct":100*(1-anti["stderr"]/plain["stderr"]) if plain["stderr"]>0 else 0.0})
+    return pd.DataFrame(rows)
